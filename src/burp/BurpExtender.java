@@ -10,7 +10,7 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
     private IExtensionHelpers helpers;
     private IBurpExtenderCallbacks callbacks;
 
-    private static Pattern ASP_VERSION_PATTERN = Pattern.compile("X-AspNet-Version: ([0-9].[^,]+),");
+    private static Pattern ASP_VERSION_PATTERN = Pattern.compile("x-aspnet-version: ([0-9].[^,]+),", Pattern.CASE_INSENSITIVE);
     
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
@@ -40,7 +40,7 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
             List<int[]> versionPosition = new ArrayList<int[]>();
             versionPosition.add(new int[] { matcher.start()-1, matcher.end()-2 });
 
-            List<IScanIssue> issues = new ArrayList(1);
+            List<IScanIssue> issues = new ArrayList<>(1);
 
             issues.add(new CustomScanIssue(
                 baseRequestResponse.getHttpService(),

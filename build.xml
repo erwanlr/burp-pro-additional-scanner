@@ -3,7 +3,8 @@
         <fileset dir="lib" includes="*.jar"/>
     </path>
     <target name="clean">
-        <delete dir="build"/>
+        <delete dir="build/classes"/>
+        <delete dir="build/jar"/>
     </target>
     <target name="compile">
         <mkdir dir="build/classes"/>
@@ -11,7 +12,6 @@
     </target>
     <target name="jar">
         <mkdir dir="build/jar"/>
-
         <jar destfile="build/jar/asp-version-detection.jar" basedir="build/classes">
             <manifest>
                 <attribute name="Main-Class" value="burp.BurpExtender"/>
