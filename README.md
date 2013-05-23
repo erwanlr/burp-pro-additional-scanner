@@ -1,10 +1,14 @@
-burp-pro-additional-scanner
-===========================
-
 Latest Stable Version:
 ======================
 
 Check the .jar in the build directory
+
+Features:
+
+- Passive Scanning
+  - ASP.NET Version detection
+- Active Scanning
+  - /
 
 Manual Compilation:
 =================== 
