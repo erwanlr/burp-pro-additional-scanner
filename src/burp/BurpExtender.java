@@ -40,7 +40,7 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
             List<int[]> versionPosition = new ArrayList<int[]>();
             versionPosition.add(new int[] { matcher.start()-1, matcher.end()-2 });
 
-            List<IScanIssue> issues = new ArrayList<>(1);
+            List<IScanIssue> issues = new ArrayList<IScanIssue>(1);
 
             issues.add(new CustomScanIssue(
                 baseRequestResponse.getHttpService(),
