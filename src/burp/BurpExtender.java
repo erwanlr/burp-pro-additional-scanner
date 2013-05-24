@@ -36,27 +36,37 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
 
     private List<IScanIssue> doPassiveHeadersScan(IHttpRequestResponse requestResponse)
     {
-        String  headers  = helpers.analyzeResponse(requestResponse.getResponse()).getHeaders().toString();
+        String headers = helpers.analyzeResponse(requestResponse.getResponse()).getHeaders().toString();
+        List<IScanIssue> issues = new ArrayList<IScanIssue>(1);
+
+        IScanIssue aspNetVersionIssue = doPassiveHeadersASPNETVersionScan(headers, requestResponse);
+
+        if (aspNetVersionIssue != null)
+            issues.add(aspNetVersionIssue);
+
+        return issues;
+    }
+
+    private IScanIssue doPassiveHeadersASPNETVersionScan(String headers, IHttpRequestResponse requestResponse)
+    {
         Matcher matcher  = ASP_VERSION_PATTERN.matcher(headers);
-        
+
         if (matcher.find())
         {
-            String version = matcher.group(1);
+            String version              = matcher.group(1);
             List<int[]> versionPosition = new ArrayList<int[]>();
+
             versionPosition.add(new int[] { matcher.start()-1, matcher.end()-2 });
 
-            List<IScanIssue> issues = new ArrayList<IScanIssue>(1);
-
-            issues.add(new ASPNETVersionIssue(
+            return new ASPNETVersionIssue(
                 requestResponse.getHttpService(),
                 helpers.analyzeRequest(requestResponse).getUrl(), 
                 new IHttpRequestResponse[] { callbacks.applyMarkers(requestResponse, null, versionPosition) }, 
                 version
-            ));
-            return issues;
+            );
         }
-        else return null;
-    } 
+        return null;
+    }
 
     @Override
     public List<IScanIssue> doActiveScan(IHttpRequestResponse requestResponse, IScannerInsertionPoint insertionPoint)
