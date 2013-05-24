@@ -18,7 +18,7 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
         this.callbacks = callbacks;
         helpers        = callbacks.getHelpers();
         
-        callbacks.setExtensionName("ASP.NET Version Detector");
+        callbacks.setExtensionName("Additional Scanner");
         //callbacks.issueAlert("Loaded");
         
         callbacks.registerScannerCheck(this);
@@ -29,10 +29,15 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
     //
     
     @Override
-    public List<IScanIssue> doPassiveScan(IHttpRequestResponse baseRequestResponse)
+    public List<IScanIssue> doPassiveScan(IHttpRequestResponse requestResponse)
     {
-        String headers  = helpers.analyzeResponse(baseRequestResponse.getResponse()).getHeaders().toString();
-        Matcher matcher = ASP_VERSION_PATTERN.matcher(headers);
+        return doPassiveHeadersScan(requestResponse);
+    }
+
+    private List<IScanIssue> doPassiveHeadersScan(IHttpRequestResponse requestResponse)
+    {
+        String  headers  = helpers.analyzeResponse(requestResponse.getResponse()).getHeaders().toString();
+        Matcher matcher  = ASP_VERSION_PATTERN.matcher(headers);
         
         if (matcher.find())
         {
@@ -42,21 +47,19 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
 
             List<IScanIssue> issues = new ArrayList<IScanIssue>(1);
 
-            issues.add(new CustomScanIssue(
-                baseRequestResponse.getHttpService(),
-                helpers.analyzeRequest(baseRequestResponse).getUrl(), 
-                new IHttpRequestResponse[] { callbacks.applyMarkers(baseRequestResponse, null, versionPosition) }, 
-                "ASP.NET Version - " + version,
-                "The X-AspNet-Version response header value has been detected",
-                "Low")
-            );
+            issues.add(new ASPNETVersionIssue(
+                requestResponse.getHttpService(),
+                helpers.analyzeRequest(requestResponse).getUrl(), 
+                new IHttpRequestResponse[] { callbacks.applyMarkers(requestResponse, null, versionPosition) }, 
+                version
+            ));
             return issues;
         }
         else return null;
-    }
+    } 
 
     @Override
-    public List<IScanIssue> doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint)
+    public List<IScanIssue> doActiveScan(IHttpRequestResponse requestResponse, IScannerInsertionPoint insertionPoint)
     {
         return null;
     }

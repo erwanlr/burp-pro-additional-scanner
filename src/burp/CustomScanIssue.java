@@ -4,9 +4,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-//
-// class implementing IScanIssue to hold our custom scan issue details
-//
 class CustomScanIssue implements IScanIssue
 {
     private IHttpService httpService;
@@ -24,12 +21,12 @@ class CustomScanIssue implements IScanIssue
                            String detail,
                            String severity)
     {
-        this.httpService = httpService;
-        this.url = url;
+        this.url          = url;
+        this.name         = name;
+        this.detail       = detail;
+        this.severity     = severity;
+        this.httpService  = httpService;
         this.httpMessages = httpMessages;
-        this.name = name;
-        this.detail = detail;
-        this.severity = severity;
     }
     
     @Override
