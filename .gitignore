@@ -1,4 +1,4 @@
-*.class
+build/*.jar
 
 # Package Files #
 *.war

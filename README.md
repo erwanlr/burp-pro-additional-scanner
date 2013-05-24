@@ -1,7 +1,7 @@
 Latest Stable Version:
 ======================
 
-Check the .jar in the build directory
+Check the .jar in the build/stable directory
 
 Features:
 
