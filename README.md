@@ -7,6 +7,7 @@ Features:
 
 - Passive Scanning
   - ASP.NET Version detection
+  - Potential XSS via URL parameters (only checked with params value >= 3 chars)
 - Active Scanning
   - /
 

@@ -3,6 +3,7 @@ package burp;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.util.regex.*;
 
 public class BurpExtender implements IBurpExtender, IScannerCheck
@@ -11,7 +12,8 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
     private IBurpExtenderCallbacks callbacks;
 
     private static Pattern ASP_VERSION_PATTERN = Pattern.compile("x-aspnet-version: ([0-9].[^,]+),", Pattern.CASE_INSENSITIVE);
-    
+    private static final int MIN_PARAMETER_VALUE_LENGTH = 3;
+
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
@@ -24,6 +26,26 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
         callbacks.registerScannerCheck(this);
     }
 
+    // helper method to search a response for occurrences of a literal match string
+    // and return a list of start/end offsets
+    // This method comes from http://blog.portswigger.net/2012/12/sample-burp-suite-extension-custom_20.html
+    private List<int[]> getMatches(byte[] response, byte[] match)
+    {
+        List<int[]> matches = new ArrayList<int[]>();
+
+        int start = 0;
+        while (start < response.length)
+        {
+            start = helpers.indexOf(response, match, true, start, response.length);
+            if (start == -1)
+                break;
+            matches.add(new int[] { start, start + match.length });
+            start += match.length;
+        }
+        
+        return matches;
+    }
+
     //
     // implement IScannerCheck
     //
@@ -31,13 +53,18 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
     @Override
     public List<IScanIssue> doPassiveScan(IHttpRequestResponse requestResponse)
     {
-        return doPassiveHeadersScan(requestResponse);
+        List<IScanIssue> results = new ArrayList<IScanIssue>();
+
+        results.addAll(doPassiveHeadersScan(requestResponse));
+        results.addAll(doPassiveParametersScan(requestResponse));
+
+        return results;
     }
 
     private List<IScanIssue> doPassiveHeadersScan(IHttpRequestResponse requestResponse)
     {
+        List<IScanIssue> issues = new ArrayList<IScanIssue>();
         String headers = helpers.analyzeResponse(requestResponse.getResponse()).getHeaders().toString();
-        List<IScanIssue> issues = new ArrayList<IScanIssue>(1);
 
         IScanIssue aspNetVersionIssue = doPassiveHeadersASPNETVersionScan(headers, requestResponse);
 
@@ -67,9 +94,47 @@ public class BurpExtender implements IBurpExtender, IScannerCheck
         }
         return null;
     }
+    
+    /*
+      TODO:
+        - scan for url param like redirect, returnurl etc (Unvalidated Redirects and Forwards)
+    */
+    private List<IScanIssue> doPassiveParametersScan(IHttpRequestResponse requestResponse)
+    {
+        IParameter parameter;
+        byte[] response               = requestResponse.getResponse();
+        List<IScanIssue> issues       = new ArrayList<IScanIssue>();
+        List<IParameter> parameters   = helpers.analyzeRequest(requestResponse).getParameters();
+        Iterator<IParameter> iterator = parameters.iterator();
+
+        while (iterator.hasNext())
+        {
+            parameter = iterator.next();
+
+            if (parameter.getType() == IParameter.PARAM_URL)
+            {
+                if (parameter.getValue().length() >= MIN_PARAMETER_VALUE_LENGTH)
+                {
+                    List<int[]> matches = getMatches(response, parameter.getValue().getBytes());
+
+                    if (matches.size() > 0)
+                    {
+                        issues.add(new PotentialXSSIssue(
+                            requestResponse.getHttpService(),
+                            helpers.analyzeRequest(requestResponse).getUrl(), 
+                            new IHttpRequestResponse[] { callbacks.applyMarkers(requestResponse, null, matches) }, 
+                            parameter
+                        ));
+                    }
+                }
+            }
+        }
+
+        return issues;
+    }
 
     @Override
-    public List<IScanIssue> doActiveScan(IHttpRequestResponse requestResponse, IScannerInsertionPoint insertionPoint)
+    public List<IScanIssue> doActiveScan(IHttpRequestResponse requestResponse, IScannerInsertionPoint insertionPoint) 
     {
         return null;
     }
